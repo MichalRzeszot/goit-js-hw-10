@@ -5,17 +5,22 @@ axios.defaults.headers.common['x-api-key'] =
 
 export const fetchBreeds = async () => {
   try {
-    const response = await axios.get('https://api.thecatapi.com/v1/breeds');
+    const response = await axios.get(`${CAT_API_URL}/breeds`, {
+      timeout: 5000,
+    });
     return response.data;
   } catch (error) {
+    console.error('Error fetching breeds:', error);
     throw error;
   }
 };
 
+const CAT_API_URL = 'https://api.thecatapi.com/v1';
+
 export const fetchCatByBreed = async breedId => {
   try {
     const response = await axios.get(
-      `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
+      `${CAT_API_URL}/images/search?breed_ids=${breedId}`
     );
     return response.data;
   } catch (error) {

@@ -37,20 +37,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  const showCatInfo = catData => {
-    catImage.src = catData.url;
-    breedName.textContent = catData.breeds[0].name;
-    description.textContent = `Description: ${catData.breeds[0].description}`;
-    temperament.textContent = `Temperament: ${catData.breeds[0].temperament}`;
-    catInfo.style.display = 'block';
+  const updateCatInfo = catData => {
+    if (catData && catData.breeds && catData.breeds.length > 0) {
+      const cat = catData.breeds[0];
+      const breed = cat.breeds[0] || {};
+
+      if (catImage) {
+        catImage.src = cat.url || '';
+      }
+
+      if (breedName) {
+        breedName.textContent = `Name: ${breed.name || ''}`;
+      }
+
+      if (description) {
+        description.textContent = `Description: ${breed.description || ''}`;
+      }
+
+      if (temperament) {
+        temperament.textContent = `Temperament: ${breed.temperament || ''}`;
+      }
+
+      if (catInfo) {
+        catInfo.style.display = 'block';
+      }
+    }
   };
 
   const clearCatInfo = () => {
-    catImage.src = '';
-    breedName.textContent = '';
-    description.textContent = '';
-    temperament.textContent = '';
-    catInfo.style.display = 'none';
+    if (catImage) {
+      catImage.src = '';
+    }
+
+    if (breedName) {
+      breedName.textContent = '';
+    }
+
+    if (description) {
+      description.textContent = '';
+    }
+
+    if (temperament) {
+      temperament.textContent = '';
+    }
+
+    if (catInfo) {
+      catInfo.style.display = 'none';
+    }
   };
 
   breedSelect.addEventListener('change', async () => {
@@ -61,8 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const response = await fetchCatByBreed(selectedBreedId);
-      const catData = response[0];
-      showCatInfo(catData);
+      const catData = response.data;
+      updateCatInfo(catData);
     } catch (error) {
       showError();
     } finally {
