@@ -1,121 +1,50 @@
 import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const loader = document.querySelector('.loader');
-  const error = document.querySelector('.error');
-  const breedSelect = document.querySelector('.breed-select');
-  const catInfo = document.querySelector('.cat-info');
-  const catImage = document.querySelector('.cat-info img');
-  const breedName = document.querySelector('.cat-info h2');
-  const description = document.querySelector('.cat-info p:first-child');
-  const temperament = document.querySelector('.cat-info p:last-child');
+const breedSelector = document.querySelector('.breed-select');
+const catInfoContainer = document.querySelector('.cat-info');
+const loaderElement = document.querySelector('.loader');
+const errorSpanElement = document.querySelector('.error');
 
-  let breeds = [];
+errorSpanElement.textContent = '';
+loaderElement.textContent = '';
+loaderElement.style.display = 'none';
+loaderElement.style.scale = '1';
 
-  const showLoader = () => {
-    loader.style.display = 'block';
-  };
-
-  const hideLoader = () => {
-    loader.style.display = 'none';
-  };
-
-  const showError = () => {
-    error.style.display = 'block';
-  };
-
-  const hideError = () => {
-    error.style.display = 'none';
-  };
-
-  const fillBreedsSelect = () => {
-    breeds.forEach(breed => {
-      const option = document.createElement('option');
-      option.value = breed.id;
-      option.text = breed.name;
-      breedSelect.add(option);
-    });
-  };
-
-  const updateCatInfo = catData => {
-    if (catData && catData.breeds && catData.breeds.length > 0) {
-      const cat = catData.breeds[0];
-      const breed = cat.breeds[0] || {};
-
-      if (catImage) {
-        catImage.src = cat.url || '';
-      }
-
-      if (breedName) {
-        breedName.textContent = `Name: ${breed.name || ''}`;
-      }
-
-      if (description) {
-        description.textContent = `Description: ${breed.description || ''}`;
-      }
-
-      if (temperament) {
-        temperament.textContent = `Temperament: ${breed.temperament || ''}`;
-      }
-
-      if (catInfo) {
-        catInfo.style.display = 'block';
-      }
-    }
-  };
-
-  const clearCatInfo = () => {
-    if (catImage) {
-      catImage.src = '';
-    }
-
-    if (breedName) {
-      breedName.textContent = '';
-    }
-
-    if (description) {
-      description.textContent = '';
-    }
-
-    if (temperament) {
-      temperament.textContent = '';
-    }
-
-    if (catInfo) {
-      catInfo.style.display = 'none';
-    }
-  };
-
-  breedSelect.addEventListener('change', async () => {
-    const selectedBreedId = breedSelect.value;
-    showLoader();
-    hideError();
-    clearCatInfo();
-
-    try {
-      const response = await fetchCatByBreed(selectedBreedId);
-      const catData = response.data;
-      updateCatInfo(catData);
-    } catch (error) {
-      showError();
-    } finally {
-      hideLoader();
-    }
+fetchBreeds()
+  .then(breeds => {
+    const breedOptionsMarkup = breeds.map(
+      breed => `<option value="${breed.id}">${breed.name}</option>`
+    );
+    breedSelector.innerHTML = breedOptionsMarkup.join('');
+  })
+  .catch(error => {
+    Notiflix.Report.failure(
+      'Error',
+      'Oops! Something went wrong! Try reloading the page!'
+    );
   });
 
-  const initializeApp = async () => {
-    showLoader();
-    hideError();
+breedSelector.addEventListener('change', event => {
+  const selectedBreedId = event.target.value;
+  catInfoContainer.innerHTML = '';
+  loaderElement.style.display = 'block';
 
-    try {
-      breeds = await fetchBreeds();
-      fillBreedsSelect();
-    } catch (error) {
-      showError();
-    } finally {
-      hideLoader();
-    }
-  };
-
-  initializeApp();
+  fetchCatByBreed(selectedBreedId)
+    .then(catData => {
+      const catHtml = catData.map(cat => {
+        return `<img width="600" height="400" src="${cat.url}" class="cat-img"></img>
+                <h2 class="cat-name">${cat.breeds[0].name}</h2>
+                <p class="description">${cat.breeds[0].description}</p>`;
+      });
+      catInfoContainer.innerHTML = catHtml.join('');
+    })
+    .catch(error => {
+      Notiflix.Report.failure(
+        'Error',
+        'Oops! Something went wrong! Try reloading the page!'
+      );
+    })
+    .finally(() => {
+      loaderElement.style.display = 'none';
+    });
 });
