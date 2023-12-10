@@ -1,4 +1,4 @@
-import Notiflix from 'notiflix'; // Dodaj import Notiflix
+import Notiflix from 'notiflix';
 
 import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
 
@@ -38,7 +38,6 @@ function setLoadingState(isBreedsLoading, isCatLoading, isError = false) {
   }
 }
 
-// Ukryj select na początku
 breedSelector.style.display = 'none';
 errorMessageElement.style.display = 'none';
 
@@ -54,7 +53,6 @@ fetchBreeds()
     setLoadingState(false, false, true);
   })
   .finally(() => {
-    // Wywołaj setLoadingState bez isError, aby ukryć komunikat o błędzie przy ładowaniu strony
     setLoadingState(false, false, false);
   });
 
