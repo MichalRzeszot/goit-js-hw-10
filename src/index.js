@@ -1,3 +1,5 @@
+import Notiflix from 'notiflix'; // Dodaj import Notiflix
+
 import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
 
 const breedSelector = document.querySelector('.breed-select');
@@ -8,17 +10,12 @@ errorMessageElement.classList.add('error-message');
 
 let isFirstLoad = true;
 
-function setLoadingState(isBreedsLoading, isCatLoading) {
+function setLoadingState(isBreedsLoading, isCatLoading, isError = false) {
   if (isBreedsLoading) {
-    if (!isFirstLoad) {
-      loaderElement.textContent = 'Loading breeds, please wait...';
-      loaderElement.style.display = 'block';
-      document.body.classList.add('breeds-loading');
-    } else {
-      loaderElement.textContent = '';
-      loaderElement.style.display = 'none';
-      isFirstLoad = false;
-    }
+    loaderElement.textContent = 'Loading breeds, please wait...';
+    loaderElement.style.display = 'block';
+    document.body.classList.add('breeds-loading');
+    breedSelector.style.display = 'none';
   } else if (isCatLoading) {
     loaderElement.textContent = 'Loading cat information, please wait...';
     loaderElement.style.display = 'block';
@@ -27,9 +24,23 @@ function setLoadingState(isBreedsLoading, isCatLoading) {
     loaderElement.textContent = '';
     loaderElement.style.display = 'none';
     document.body.classList.remove('breeds-loading', 'cat-loading');
+    breedSelector.style.display = 'block';
   }
-  errorMessageElement.style.display = 'none';
+
+  if (isError) {
+    errorMessageElement.style.display = 'block';
+    Notiflix.Report.failure(
+      'Error',
+      'Oops! Something went wrong! Try reloading the page!'
+    );
+  } else {
+    errorMessageElement.style.display = 'none';
+  }
 }
+
+// Ukryj select na początku
+breedSelector.style.display = 'none';
+errorMessageElement.style.display = 'none';
 
 fetchBreeds()
   .then(breeds => {
@@ -40,12 +51,11 @@ fetchBreeds()
     breedSelector.innerHTML = breedOptionsMarkup.join('');
   })
   .catch(error => {
-    setLoadingState(false, false);
-    errorMessageElement.style.display = 'block';
-    Notiflix.Report.failure(
-      'Error',
-      'Oops! Something went wrong! Try reloading the page!'
-    );
+    setLoadingState(false, false, true);
+  })
+  .finally(() => {
+    // Wywołaj setLoadingState bez isError, aby ukryć komunikat o błędzie przy ładowaniu strony
+    setLoadingState(false, false, false);
   });
 
 breedSelector.addEventListener('change', event => {
@@ -63,14 +73,9 @@ breedSelector.addEventListener('change', event => {
       catInfoContainer.innerHTML = catHtml.join('');
     })
     .catch(error => {
-      setLoadingState(false, false);
-      errorMessageElement.style.display = 'block';
-      Notiflix.Report.failure(
-        'Error',
-        'Oops! Something went wrong! Try reloading the page!'
-      );
+      setLoadingState(false, false, true);
     })
-    .finally(function () {
+    .finally(() => {
       setLoadingState(false, false);
     });
 });
