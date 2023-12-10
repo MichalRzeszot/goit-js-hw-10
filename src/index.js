@@ -12,12 +12,12 @@ let isFirstLoad = true;
 
 function setLoadingState(isBreedsLoading, isCatLoading, isError = false) {
   if (isBreedsLoading) {
-    loaderElement.textContent = 'Loading breeds, please wait...';
+    loaderElement.textContent = 'Loading data, please wait...';
     loaderElement.style.display = 'block';
     document.body.classList.add('breeds-loading');
     breedSelector.style.display = 'none';
   } else if (isCatLoading) {
-    loaderElement.textContent = 'Loading cat information, please wait...';
+    loaderElement.textContent = 'Loading data, please wait...';
     loaderElement.style.display = 'block';
     document.body.classList.add('cat-loading');
   } else {
