@@ -1,79 +1,95 @@
-import Notiflix from 'notiflix';
+import axios from 'axios';
 
-import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
+$(document).ready(function () {
+  const $searchForm = $('#search-form');
+  const $gallery = $('.gallery');
+  const $loadMoreBtn = $('.load-more');
+  let currentPage = 1;
 
-const breedSelector = document.querySelector('.breed-select');
-const catInfoContainer = document.querySelector('.cat-info');
-const loaderElement = document.querySelector('.loader');
-const errorMessageElement = document.querySelector('.error');
-errorMessageElement.classList.add('error-message');
+  $searchForm.submit(function (event) {
+    event.preventDefault();
+    const searchQuery = $('input[name="searchQuery"]').val();
 
-let isFirstLoad = true;
+    // Reset pagination
+    currentPage = 1;
 
-function setLoadingState(isBreedsLoading, isCatLoading, isError = false) {
-  if (isBreedsLoading) {
-    loaderElement.textContent = 'Loading data, please wait...';
-    loaderElement.style.display = 'block';
-    document.body.classList.add('breeds-loading');
-    breedSelector.style.display = 'none';
-  } else if (isCatLoading) {
-    loaderElement.textContent = 'Loading data, please wait...';
-    loaderElement.style.display = 'block';
-    document.body.classList.add('cat-loading');
-  } else {
-    loaderElement.textContent = '';
-    loaderElement.style.display = 'none';
-    document.body.classList.remove('breeds-loading', 'cat-loading');
-    breedSelector.style.display = 'block';
-  }
+    // Clear gallery
+    $gallery.html('');
 
-  if (isError) {
-    errorMessageElement.style.display = 'block';
-    Notiflix.Report.failure(
-      'Error',
-      'Oops! Something went wrong! Try reloading the page!'
-    );
-  } else {
-    errorMessageElement.style.display = 'none';
-  }
-}
-
-breedSelector.style.display = 'none';
-errorMessageElement.style.display = 'none';
-
-fetchBreeds()
-  .then(breeds => {
-    setLoadingState(true, false);
-    const breedOptionsMarkup = breeds.map(
-      breed => `<option value="${breed.id}">${breed.name}</option>`
-    );
-    breedSelector.innerHTML = breedOptionsMarkup.join('');
-  })
-  .catch(error => {
-    setLoadingState(false, false, true);
-  })
-  .finally(() => {
-    setLoadingState(false, false, false);
+    searchImages(searchQuery);
   });
 
-breedSelector.addEventListener('change', event => {
-  const selectedBreedId = event.target.value;
-  catInfoContainer.innerHTML = '';
-  setLoadingState(false, true);
+  $loadMoreBtn.click(function () {
+    const searchQuery = $('input[name="searchQuery"]').val();
+    currentPage++;
+    searchImages(searchQuery);
+  });
 
-  fetchCatByBreed(selectedBreedId)
-    .then(catData => {
-      const catHtml = catData.map(cat => {
-        return `<img width="600" height="400" src="${cat.url}" class="cat-img"></img>
-                <h2 class="cat-name">${cat.breeds[0].name}</h2>
-                <p class="description">${cat.breeds[0].description}</p>`;
-      });
-      catInfoContainer.innerHTML = catHtml.join('');
-    })
-    .catch(error => {
-      setLoadingState(false, false, true);
-    })
-    .finally(() => {
-      setLoadingState(false, false);
-    });
+  async function searchImages(query) {
+    const apiKey = 'YOUR_API_KEY'; // Replace with your Pixabay API key
+    const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${currentPage}&per_page=40`;
+
+    try {
+      const response = await axios.get(apiUrl);
+
+      if (response.data.hits.length > 0) {
+        // Show notification for the first search
+        if (currentPage === 1) {
+          Notiflix.Notify.success(
+            `Hooray! We found ${response.data.totalHits} images.`
+          );
+        }
+
+        // Append images to the gallery
+        response.data.hits.forEach(image => {
+          const cardHtml = `
+            <div class="photo-card">
+              <a href="${image.largeImageURL}" class="lightbox" data-lightbox="gallery">
+                <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" />
+              </a>
+              <div class="info">
+                <p class="info-item"><b>Likes:</b> ${image.likes}</p>
+                <p class="info-item"><b>Views:</b> ${image.views}</p>
+                <p class="info-item"><b>Comments:</b> ${image.comments}</p>
+                <p class="info-item"><b>Downloads:</b> ${image.downloads}</p>
+              </div>
+            </div>
+          `;
+          $gallery.append(cardHtml);
+        });
+
+        // Refresh SimpleLightbox after adding new images
+        const lightbox = new SimpleLightbox('.lightbox');
+        lightbox.refresh();
+
+        // Scroll to the newly added images
+        const { height: cardHeight } = $gallery
+          .children()
+          .last()
+          .get(0)
+          .getBoundingClientRect();
+        window.scrollBy({
+          top: cardHeight * 2,
+          behavior: 'smooth',
+        });
+
+        // Show Load more button if there are more images
+        if (response.data.totalHits > currentPage * 40) {
+          $loadMoreBtn.show();
+        } else {
+          $loadMoreBtn.hide();
+          Notiflix.Notify.info(
+            "We're sorry, but you've reached the end of search results."
+          );
+        }
+      } else {
+        // Show notification if no images found
+        Notiflix.Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    }
+  }
 });
